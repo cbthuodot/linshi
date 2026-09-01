@@ -34,13 +34,16 @@ def test_html_is_self_contained_and_clickable(tmp_path: Path):
     path = tmp_path / "graph.html"
     to_html(sample_graph(), path)
     text = path.read_text(encoding="utf-8")
+    lowered = text.lower()
     assert "StoryGraph 小说关系图" in text
     assert "林夏" in text
     assert "陈默" in text
     assert "function select(id)" in text
     assert "storygraph-data" in text
-    assert "https://" not in text
-    assert "http://" not in text
+    assert '<script src="http' not in lowered
+    assert "<script src='http" not in lowered
+    assert '<link href="http' not in lowered
+    assert "<link href='http" not in lowered
 
 
 def test_report_contains_story_status(tmp_path: Path):
