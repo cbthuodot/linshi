@@ -1,8 +1,8 @@
 # StoryGraph
 
-StoryGraph is a novel/story relationship-graph tool adapted from reusable architecture ideas in Graphify.
+StoryGraph is a local novel/story relationship-graph tool adapted from reusable architecture ideas in Graphify.
 
-The project is being rebuilt in phases. Phase 4 is complete on the development branch: coding agents can ingest grounded chapter facts, ask chapter-specific story questions, track unresolved foreshadowing, and run strong continuity checks without treating normal story changes as contradictions.
+Phase 5 is complete on the development branch. StoryGraph can ingest grounded chapter facts, track aliases and changing relationships, reason about story-time state, check strong continuity conflicts, safely replace one tracked chapter, and export a clickable relationship map plus a story status report.
 
 ## Install for development
 
@@ -11,19 +11,32 @@ pip install -e .
 storygraph init
 ```
 
-If the machine is offline but already has the build dependencies installed, use:
+If the machine is offline but already has the build dependencies installed:
 
 ```bash
 pip install -e . --no-build-isolation
 ```
 
-## Current commands
+## Normal chapter workflow
 
 ```bash
-storygraph init
-storygraph add fragment.json
 storygraph validate-chapter chapters/001.md fragment.json --index 1 --label "第1章"
 storygraph add-chapter chapters/001.md fragment.json --index 1 --label "第1章"
+```
+
+`add-chapter` stores the grounded chapter fragment and a SHA-256 file fingerprint so the chapter can be replaced safely later.
+
+After editing an already tracked chapter, extract a new fragment and run:
+
+```bash
+storygraph update-chapter chapters/002.md fragment-v2.json --index 2 --label "第2章"
+```
+
+StoryGraph replaces that chapter's cached fragment, then reconstructs a candidate graph from the cached validated fragments. It does not reread unchanged chapter prose. If the replacement is invalid or breaks later cached facts, the saved graph and manifest are left unchanged.
+
+## Story queries and checks
+
+```bash
 storygraph query "林夏"
 storygraph path "林夏" "银色钥匙"
 storygraph timeline "林夏"
@@ -34,14 +47,28 @@ storygraph groups
 storygraph check
 ```
 
-The graph is stored at `storygraph-out/graph.json` by default.
+## Export
 
-StoryGraph keeps the original novel as the source of truth. Chapter-derived relationships carry source chapter information and evidence passages. The agent workflow separates explicit facts, reasonable interpretation, and uncertainty, and keeps reader knowledge separate from character knowledge.
+```bash
+storygraph export
+```
 
-Phase 4 adds story-time reasoning. Later ownership/location/opposing relationship states normally supersede earlier open-ended states, so ordinary changes such as distrust -> trust, movement, and object transfer are not automatically reported as errors. Explicit overlapping states can still be flagged.
+This creates:
 
-Current strong checks cover character knowledge leaks, explicit contradiction edges, simultaneous opposing relationships, multiple active owners, and multiple active locations. These are warnings to inspect against the original prose, not automatic proof the author made a mistake.
+- `storygraph-out/graph.json` — machine-readable story graph;
+- `storygraph-out/graph.html` — self-contained clickable relationship map with search and node highlighting;
+- `storygraph-out/STORY_REPORT.md` — deterministic story status report.
 
-The included StoryGraph skill lives at `.agents/skills/storygraph/` and includes separate extraction, story-model, and reasoning references.
+Use `storygraph report` when only the Markdown report is needed.
 
-See `DEVELOPMENT_PLAN.md` for the phase plan, `PHASE4_VERIFICATION.md` for verification results, `GRAPHIFY_ADAPTATION.md` for which Graphify ideas are reused, and `NOTICE` for upstream attribution.
+## Important rules
+
+The original novel remains the source of truth. Chapter-derived relationships carry chapter/source information and evidence passages. Explicit facts, interpretations, and uncertainty remain separate, and reader knowledge is not automatically treated as character knowledge.
+
+Safe chapter replacement requires the Phase 5 tracked workflow. If an older graph contains untracked facts and no chapter manifest, StoryGraph refuses to guess which facts belong to which chapter. Create a fresh output folder and ingest the chapters with `add-chapter` before using `update-chapter`.
+
+Current strong checks cover character knowledge leaks, explicit contradiction edges, simultaneous opposing relationships, multiple active owners, and multiple active locations. These are warnings to inspect against the prose, not automatic proof the author made a mistake.
+
+The included StoryGraph skill lives at `.agents/skills/storygraph/`. Final Codex/OpenCode/ZCode packaging and end-to-end agent installation are Phase 6.
+
+See `DEVELOPMENT_PLAN.md` for the phase plan, `PHASE5_VERIFICATION.md` for verification results, `GRAPHIFY_ADAPTATION.md` for which Graphify ideas are reused, and `NOTICE` for upstream attribution.
