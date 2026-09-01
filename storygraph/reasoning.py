@@ -1,13 +1,10 @@
 from __future__ import annotations
 
-from collections import defaultdict
-
 import networkx as nx
 
 from .model import entity_terms, normalize_name
 
 KNOWLEDGE_RELATIONS = {"does_not_know", "learns", "knows"}
-EXCLUSIVE_RELATIONS = {"owns", "located_at"}
 OPPOSING_RELATIONS = {
     "trusts": "distrusts",
     "distrusts": "trusts",
@@ -52,6 +49,59 @@ def _active_at(attrs: dict, chapter: int) -> bool:
     return True
 
 
+def _successor_chapter(
+    edge_rows: list[tuple[str, str, dict]],
+    source: str,
+    target: str,
+    attrs: dict,
+) -> int | None:
+    """Infer when an open-ended state is replaced by a later state.
+
+    We only infer an end when the old edge has no explicit valid_to. An explicit
+    overlapping validity window remains authoritative and can therefore be
+    reported as a real conflict.
+    """
+    if attrs.get("valid_to") is not None:
+        return None
+    current = _chapter(attrs)
+    if current is None:
+        return None
+    relation = str(attrs.get("relation", ""))
+    successors: list[int] = []
+    for source2, target2, attrs2 in edge_rows:
+        later = _chapter(attrs2)
+        if later is None or later <= current:
+            continue
+        relation2 = str(attrs2.get("relation", ""))
+        if relation == "owns" and relation2 == "owns" and target2 == target:
+            successors.append(later)
+        elif relation == "located_at" and relation2 == "located_at" and source2 == source:
+            successors.append(later)
+        elif (
+            relation in OPPOSING_RELATIONS
+            and source2 == source
+            and target2 == target
+            and relation2 == OPPOSING_RELATIONS[relation]
+        ):
+            successors.append(later)
+    return min(successors) if successors else None
+
+
+def _effectively_active_edges(
+    graph: nx.MultiDiGraph, chapter: int
+) -> list[tuple[str, str, dict]]:
+    edge_rows = [(source, target, dict(attrs)) for source, target, attrs in graph.edges(data=True)]
+    active: list[tuple[str, str, dict]] = []
+    for source, target, attrs in edge_rows:
+        if not _active_at(attrs, chapter):
+            continue
+        successor = _successor_chapter(edge_rows, source, target, attrs)
+        if successor is not None and chapter >= successor:
+            continue
+        active.append((source, target, attrs))
+    return active
+
+
 def knowledge_state(
     graph: nx.MultiDiGraph,
     character: str,
@@ -75,7 +125,7 @@ def knowledge_state(
         if target != secret_id:
             continue
         relation = attrs.get("relation")
-        event_chapter = _chapter(attrs)
+        event_chapter = _chapter(dict(attrs))
         if relation in KNOWLEDGE_RELATIONS and event_chapter is not None and event_chapter <= chapter:
             events.append((event_chapter, str(relation), dict(attrs)))
     events.sort(key=lambda item: (item[0], 0 if item[1] == "does_not_know" else 1))
@@ -106,10 +156,8 @@ def active_relationships(graph: nx.MultiDiGraph, query: str, chapter: int) -> li
     if node_id is None:
         return []
     rows: list[dict] = []
-    for source, target, attrs in graph.edges(data=True):
+    for source, target, attrs in _effectively_active_edges(graph, chapter):
         if source != node_id and target != node_id:
-            continue
-        if not _active_at(dict(attrs), chapter):
             continue
         rows.append(
             {
@@ -153,19 +201,33 @@ def unresolved_foreshadowing(graph: nx.MultiDiGraph, at_chapter: int | None = No
                     "source_file": attrs.get("source_file"),
                 }
             )
-    unresolved.sort(key=lambda item: (item["chapter_index"] if isinstance(item["chapter_index"], int) else 10**12, item["label"]))
+    unresolved.sort(
+        key=lambda item: (
+            item["chapter_index"] if isinstance(item["chapter_index"], int) else 10**12,
+            item["label"],
+        )
+    )
     return unresolved
 
 
 def story_groups(graph: nx.MultiDiGraph) -> list[dict]:
     if graph.number_of_nodes() == 0:
         return []
-    undirected = graph.to_undirected()
+    simple = nx.Graph()
+    simple.add_nodes_from(graph.nodes)
+    simple.add_edges_from((source, target) for source, target in graph.edges())
+    if simple.number_of_edges() == 0:
+        communities = [{node_id} for node_id in simple.nodes]
+    else:
+        communities = list(nx.community.greedy_modularity_communities(simple))
     groups: list[dict] = []
-    for members in nx.connected_components(undirected):
+    for members in communities:
         ordered = sorted(
             members,
-            key=lambda node_id: (-undirected.degree(node_id), str(graph.nodes[node_id].get("label", node_id))),
+            key=lambda node_id: (
+                -simple.degree(node_id),
+                str(graph.nodes[node_id].get("label", node_id)),
+            ),
         )
         groups.append(
             {
@@ -181,7 +243,18 @@ def story_groups(graph: nx.MultiDiGraph) -> list[dict]:
 def consistency_issues(graph: nx.MultiDiGraph) -> list[dict]:
     issues: list[dict] = []
 
-    # A character revealing a secret before any known/learned state is a knowledge leak.
+    # Explicit contradiction edges are always surfaced.
+    for source, target, attrs in graph.edges(data=True):
+        if attrs.get("relation") == "contradicts":
+            issues.append(
+                {
+                    "kind": "explicit_contradiction",
+                    "chapter_index": _chapter(dict(attrs)),
+                    "message": f"{graph.nodes[source].get('label', source)} 与 {graph.nodes[target].get('label', target)} 被标记为互相矛盾",
+                }
+            )
+
+    # Revealing a secret requires a known/learned state by that chapter.
     for source, target, attrs in graph.edges(data=True):
         if attrs.get("relation") != "reveals":
             continue
@@ -205,52 +278,46 @@ def consistency_issues(graph: nx.MultiDiGraph) -> list[dict]:
                 }
             )
 
-    # Opposing relationships are only contradictory when their validity ranges overlap.
-    edge_rows = list(graph.edges(data=True))
-    for i, (source_a, target_a, attrs_a) in enumerate(edge_rows):
-        relation_a = attrs_a.get("relation")
-        opposite = OPPOSING_RELATIONS.get(str(relation_a))
-        if not opposite:
-            continue
-        for source_b, target_b, attrs_b in edge_rows[i + 1 :]:
-            if source_a != source_b or target_a != target_b or attrs_b.get("relation") != opposite:
-                continue
-            chapters = {
-                value
-                for value in (_chapter(dict(attrs_a)), _chapter(dict(attrs_b)), attrs_a.get("valid_from"), attrs_b.get("valid_from"))
-                if isinstance(value, int) and not isinstance(value, bool)
-            }
-            if not chapters:
-                continue
-            overlap = any(_active_at(dict(attrs_a), ch) and _active_at(dict(attrs_b), ch) for ch in range(min(chapters), max(chapters) + 1))
-            if overlap:
-                issues.append(
-                    {
-                        "kind": "relationship_conflict",
-                        "chapter_index": min(chapters),
-                        "message": f"{graph.nodes[source_a].get('label', source_a)} 对 {graph.nodes[target_a].get('label', target_a)} 存在同时有效的 {relation_a}/{opposite} 关系",
-                    }
-                )
-
-    # Exclusive state conflicts: one object with multiple owners, or one character at multiple places.
+    edge_rows = [(source, target, dict(attrs)) for source, target, attrs in graph.edges(data=True)]
     chapter_candidates = {
         ch
         for _, _, attrs in edge_rows
-        for ch in [_chapter(dict(attrs)), attrs.get("valid_from"), attrs.get("valid_to")]
+        for ch in [_chapter(attrs), attrs.get("valid_from"), attrs.get("valid_to")]
         if isinstance(ch, int) and not isinstance(ch, bool)
     }
+
     if chapter_candidates:
         for chapter in range(min(chapter_candidates), max(chapter_candidates) + 1):
-            owners: dict[str, set[str]] = defaultdict(set)
-            locations: dict[str, set[str]] = defaultdict(set)
-            for source, target, attrs in edge_rows:
-                if not _active_at(dict(attrs), chapter):
+            active = _effectively_active_edges(graph, chapter)
+
+            # Opposing relationships only conflict if both remain effectively active.
+            active_keys = {(source, target, str(attrs.get("relation", ""))) for source, target, attrs in active}
+            seen_relationship_pairs: set[tuple[str, str, str, str]] = set()
+            for source, target, attrs in active:
+                relation = str(attrs.get("relation", ""))
+                opposite = OPPOSING_RELATIONS.get(relation)
+                if not opposite or (source, target, opposite) not in active_keys:
                     continue
+                pair = (source, target, *sorted((relation, opposite)))
+                if pair in seen_relationship_pairs:
+                    continue
+                seen_relationship_pairs.add(pair)
+                issues.append(
+                    {
+                        "kind": "relationship_conflict",
+                        "chapter_index": chapter,
+                        "message": f"{graph.nodes[source].get('label', source)} 对 {graph.nodes[target].get('label', target)} 在第{chapter}章存在同时有效的 {relation}/{opposite} 关系",
+                    }
+                )
+
+            owners: dict[str, set[str]] = {}
+            locations: dict[str, set[str]] = {}
+            for source, target, attrs in active:
                 relation = attrs.get("relation")
                 if relation == "owns":
-                    owners[target].add(source)
+                    owners.setdefault(target, set()).add(source)
                 elif relation == "located_at":
-                    locations[source].add(target)
+                    locations.setdefault(source, set()).add(target)
             for obj, owner_ids in owners.items():
                 if len(owner_ids) > 1:
                     labels = ", ".join(sorted(str(graph.nodes[x].get("label", x)) for x in owner_ids))
@@ -272,7 +339,6 @@ def consistency_issues(graph: nx.MultiDiGraph) -> list[dict]:
                         }
                     )
 
-    # Deduplicate recurring conflicts across identical messages/chapters.
     unique: dict[tuple[str, int | None, str], dict] = {}
     for issue in issues:
         key = (str(issue["kind"]), issue.get("chapter_index"), str(issue["message"]))
