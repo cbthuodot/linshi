@@ -1,6 +1,6 @@
 ---
 name: storygraph
- description: Read novels and story notes, extract characters/events/locations/objects/secrets/clues/foreshadowing and their relationships, then maintain and query storygraph-out/graph.json. Use for novel understanding, continuity checking, relationship tracing, timeline reasoning, and preparing context before writing new chapters.
+description: Read novels and story notes, extract characters/events/locations/objects/secrets/clues/foreshadowing and their relationships, then maintain and query storygraph-out/graph.json. Use for novel understanding, continuity checking, relationship tracing, timeline reasoning, and preparing context before writing new chapters.
 ---
 
 # StoryGraph novel workflow
