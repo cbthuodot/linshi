@@ -1,0 +1,108 @@
+{
+  "nodes": [
+    {
+      "id": "character_xiaoxia",
+      "label": "小夏",
+      "type": "character",
+      "aliases": ["林夏"],
+      "source_file": "tests/fixtures/phase3_chapters/002.md",
+      "chapter": "第2章",
+      "chapter_index": 2
+    },
+    {
+      "id": "location_old_tower",
+      "label": "城北旧塔",
+      "type": "location",
+      "source_file": "tests/fixtures/phase3_chapters/002.md",
+      "chapter": "第2章",
+      "chapter_index": 2
+    },
+    {
+      "id": "clue_tower_mark",
+      "label": "旧塔门框上的白塔标记",
+      "type": "clue",
+      "source_file": "tests/fixtures/phase3_chapters/002.md",
+      "chapter": "第2章",
+      "chapter_index": 2,
+      "evidence": "门框上果然刻着同样的白塔标记"
+    }
+  ],
+  "edges": [
+    {
+      "source": "character_xiaoxia",
+      "target": "character_chen",
+      "relation": "trusts",
+      "confidence": "EXTRACTED",
+      "chapter": "第2章",
+      "chapter_index": 2,
+      "valid_from": 2,
+      "source_file": "tests/fixtures/phase3_chapters/002.md",
+      "evidence": "小夏决定相信陈默"
+    },
+    {
+      "source": "character_chen",
+      "target": "object_key",
+      "relation": "owns",
+      "confidence": "EXTRACTED",
+      "chapter": "第2章",
+      "chapter_index": 2,
+      "valid_from": 2,
+      "source_file": "tests/fixtures/phase3_chapters/002.md",
+      "evidence": "她把银色钥匙交给陈默保管"
+    },
+    {
+      "source": "character_chen",
+      "target": "secret_white_tower_mark",
+      "relation": "learns",
+      "confidence": "EXTRACTED",
+      "chapter": "第2章",
+      "chapter_index": 2,
+      "learned_at": 2,
+      "source_file": "tests/fixtures/phase3_chapters/002.md",
+      "evidence": "陈默这才知道白塔标记的事"
+    },
+    {
+      "source": "character_chen",
+      "target": "secret_white_tower_mark",
+      "relation": "knows",
+      "confidence": "EXTRACTED",
+      "chapter": "第2章",
+      "chapter_index": 2,
+      "valid_from": 2,
+      "source_file": "tests/fixtures/phase3_chapters/002.md",
+      "evidence": "陈默这才知道白塔标记的事"
+    },
+    {
+      "source": "character_xiaoxia",
+      "target": "location_old_tower",
+      "relation": "located_at",
+      "confidence": "EXTRACTED",
+      "chapter": "第2章",
+      "chapter_index": 2,
+      "valid_from": 2,
+      "source_file": "tests/fixtures/phase3_chapters/002.md",
+      "evidence": "两人沿着地图来到城北的旧塔"
+    },
+    {
+      "source": "character_chen",
+      "target": "location_old_tower",
+      "relation": "located_at",
+      "confidence": "EXTRACTED",
+      "chapter": "第2章",
+      "chapter_index": 2,
+      "valid_from": 2,
+      "source_file": "tests/fixtures/phase3_chapters/002.md",
+      "evidence": "两人沿着地图来到城北的旧塔"
+    },
+    {
+      "source": "clue_tower_mark",
+      "target": "foreshadow_map_mark",
+      "relation": "related_to",
+      "confidence": "EXTRACTED",
+      "chapter": "第2章",
+      "chapter_index": 2,
+      "source_file": "tests/fixtures/phase3_chapters/002.md",
+      "evidence": "门框上果然刻着同样的白塔标记"
+    }
+  ]
+}
