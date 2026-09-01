@@ -1,100 +1,89 @@
 # StoryGraph Rebuild Plan
 
-This file is the execution checklist for converting the current prototype into a novel-oriented adaptation that deliberately reuses the strongest general architecture ideas from Graphify while replacing code-specific extraction with story understanding.
+This is the fixed execution plan for turning Graphify's strongest reusable ideas into a novel-oriented tool. Work stops after every phase and continues only after the user says to continue.
 
 ## Goal
 
-Build a local, installable tool for Codex/OpenCode/ZCode that turns novel chapters and story notes into a queryable story graph without losing the original prose.
+Build a local, installable tool for Codex, OpenCode, and ZCode that turns novel chapters and story notes into a queryable story relationship graph while keeping the original prose as the source of truth.
 
-The tool must support: characters, events, locations, organizations, objects, secrets, clues, foreshadowing, goals, beliefs, conflicts, chapters/scenes, relationships, timeline changes, and character knowledge boundaries.
+## Core rule
 
-## Approach
+Do not blindly rewrite Graphify from scratch and do not blindly copy everything. Reuse/adapt the parts that are already strong and general: graph construction, validation, confidence labels, clustering, graph analysis, JSON/HTML export, incremental updates, query/path operations, and agent integration patterns. Replace code-only parsing and code-only concepts with novel understanding.
 
-Do not copy the full Graphify repository blindly. Keep the original Apache-2.0 attribution, study Graphify v8 as the upstream reference, and selectively adapt the general parts that are useful for narrative graphs: graph construction, validation, confidence labels, clustering, graph analysis, JSON/HTML export, incremental updates, query/path operations, and agent integration patterns.
+## Phase 0 — Lock the plan
 
-Replace code-only parsing and code-only concepts with a narrative extraction layer. Novel facts are not deterministic like code syntax, so every extracted relation must keep source evidence and a confidence label. The original prose remains the source of truth.
+Write this plan, create a separate development branch, preserve the upstream license/attribution, and define what counts as finished.
 
-## Implementation order
+Status: DONE.
 
-1. Repository foundation
-   - Preserve Apache-2.0 license and upstream attribution.
-   - Rename/package the project as StoryGraph.
-   - Keep output under `storygraph-out/`.
+STOP after this phase and wait for user approval.
 
-2. Stable narrative data model
-   - Define supported node types and relation types.
-   - Store source file, chapter, scene, evidence text/range when available, confidence, valid-from/valid-to, learned-at/revealed-at fields.
-   - Support aliases so the same character is not duplicated because of nicknames.
+## Phase 1 — Build the Graphify-based foundation
 
-3. Graph core
-   - Build a directed multi-edge graph so the same two entities can have multiple changing relationships over time.
-   - Deduplicate entities conservatively.
-   - Preserve history instead of overwriting older relationships.
-   - Add query, neighborhood, path, timeline, unresolved-foreshadowing, and character-knowledge queries.
+Study and map the exact Graphify modules we want to reuse. Bring/adapt only the reusable graph foundation into StoryGraph. Make the project installable and keep the graph output format stable.
 
-4. Narrative extraction
-   - Provide a strict extraction contract for AI agents reading chapters.
-   - Extract only facts grounded in the chapter.
-   - Separate explicit facts, reasonable inference, and uncertainty.
-   - Track who knows a secret and from which chapter.
-   - Track relationship/state changes over time.
-   - Track foreshadowing placement and payoff.
+Verification: install locally, create an empty graph, add a few hand-written entities/relations, query them, and run basic tests.
 
-5. Incremental updates
-   - Re-read only changed chapter files where possible.
-   - Remove/rebuild facts sourced from a changed chapter without deleting facts from other chapters.
-   - Maintain a small source manifest/hash file.
+STOP and report what was reused and what was deliberately not copied.
 
-6. Analysis
-   - Detect obvious contradictions.
-   - Detect character knowledge leaks.
-   - Detect impossible ownership/location conflicts when evidence is strong.
-   - Detect unresolved foreshadowing.
-   - Identify central characters/events and tightly connected story groups.
+## Phase 2 — Make the graph understand stories
 
-7. Output
-   - Export `graph.json` as the machine-readable source.
-   - Export a self-contained interactive `graph.html` for human browsing.
-   - Export a readable `STORY_REPORT.md` summary.
+Define the novel model: characters, events, places, organizations, objects, secrets, clues, foreshadowing, goals, beliefs, conflicts, chapters/scenes, and changing relationships.
 
-8. Agent integration
-   - Ship a reusable skill/instruction file for Codex/OpenCode/ZCode.
-   - Make the normal workflow: read chapter -> extract fragment -> add/update graph -> query before analysis/writing.
-   - Keep commands simple: init, add/update, query, path, timeline, check, report, export.
+Add time/history fields so old relationships are preserved instead of overwritten. Add aliases so one character is not duplicated because of nicknames. Add source/evidence information and confidence labels.
 
-9. Installation
-   - Make `pip install -e .` work locally.
-   - Provide a `storygraph` command.
-   - Avoid requiring a hosted database for the first usable version.
+Verification: use three hand-written chapters and confirm changing relationships, object ownership, aliases, and story order are represented correctly.
 
-## Definition of done
+STOP and report results.
 
-The first complete version is done only when all of these work on a small Chinese test novel:
+## Phase 3 — Make AI read chapters into the graph
 
-- Ingest at least three chapters.
-- Recognize recurring characters without duplicating them unnecessarily.
-- Preserve changing relationships across chapters.
-- Answer a multi-hop relationship question.
-- Answer who knows a secret at a given point in the story.
-- Report at least one intentionally planted continuity error.
-- Track a planted foreshadowing clue and its later payoff.
-- Generate `graph.json`, `graph.html`, and `STORY_REPORT.md`.
-- Re-process one edited chapter without corrupting facts from the other chapters.
-- Run unit tests successfully.
+Create the strict novel-reading instructions used by Codex/OpenCode/ZCode. The AI must read a chapter, identify supported facts, and write them into the graph while marking explicit facts, reasonable interpretations, and uncertainty separately.
 
-## Verification plan
+Track especially: who knows which secret and when, relationship changes, clues, foreshadowing, and payoff.
 
-Create a deterministic test fixture with three short Chinese chapters containing:
+Verification: feed the fixed three-chapter Chinese test story and compare the produced graph against an expected answer prepared in the tests.
 
-- two main characters and one secondary character;
-- an object that changes owner;
-- a secret learned at different times by different characters;
-- a relationship that changes from distrust to trust;
-- a clue planted in chapter 1 and paid off in chapter 3;
-- one deliberate contradiction for the checker to catch.
+STOP and report extraction accuracy and mistakes found.
 
-Verify the graph contents directly, verify CLI output, verify incremental replacement by source chapter, and open/inspect the generated HTML structure. Run the full automated test suite after every major core change and once again before declaring completion.
+## Phase 4 — Add novel reasoning and consistency checks
+
+Add queries for: who knows what at a given chapter, how two characters are connected, timeline/history, unresolved foreshadowing, current ownership/location, and important story groups.
+
+Add checks for obvious contradictions, character knowledge leaks, impossible ownership/location conflicts when evidence is strong, and forgotten foreshadowing.
+
+Verification: deliberately plant errors in the test novel and require StoryGraph to detect them without falsely flagging the correct cases.
+
+STOP and report what it catches and what it cannot reliably catch.
+
+## Phase 5 — Add updates, visual graph, and reports
+
+When one chapter changes, replace only facts sourced from that chapter instead of rebuilding/corrupting everything. Generate `graph.json`, a clickable `graph.html`, and `STORY_REPORT.md`.
+
+Verification: edit chapter 2, update the graph, confirm chapters 1 and 3 remain correct, then inspect the generated outputs.
+
+STOP and report results.
+
+## Phase 6 — Package for Codex / OpenCode / ZCode and final verification
+
+Finish the install instructions and reusable agent skill/instructions. Make the normal workflow simple: read/update chapters, query story memory, check consistency, then write/analyze.
+
+Final verification must pass all of these:
+
+- ingest at least three Chinese chapters;
+- recurring characters are not duplicated unnecessarily;
+- changing relationships keep their history;
+- multi-hop relationship questions work;
+- the system can answer who knows a secret at a chosen point in the story;
+- an intentionally planted continuity error is detected;
+- a clue planted in chapter 1 and paid off in chapter 3 is tracked;
+- `graph.json`, `graph.html`, and `STORY_REPORT.md` are generated;
+- editing one chapter does not corrupt facts from other chapters;
+- automated tests pass;
+- installation/use instructions work for the target agents.
+
+Only after all verification passes is v1 considered complete.
 
 ## Non-goals for v1
 
-Do not attempt perfect literary interpretation, automatic prose generation, or fully automatic extraction from every file format. Do not hide uncertainty. Do not replace the novel text with summaries. Do not introduce a server/database dependency unless required later.
+Do not attempt perfect literary interpretation. Do not replace the novel with summaries. Do not hide uncertainty. Do not add a hosted database unless it becomes genuinely necessary. Do not claim completion just because the demo looks good; the verification cases above must pass.
