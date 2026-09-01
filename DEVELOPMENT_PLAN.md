@@ -24,7 +24,11 @@ Study and map the exact Graphify modules we want to reuse. Bring/adapt only the 
 
 Verification: install locally, create an empty graph, add a few hand-written entities/relations, query them, and run basic tests.
 
-STOP and report what was reused and what was deliberately not copied.
+Status: DONE.
+
+Result: StoryGraph now has validate-before-build input checks, a versioned JSON graph format, a NetworkX MultiDiGraph foundation that preserves multiple relationships, basic neighbor/path queries, centralized output paths, installable package metadata, upstream licensing/attribution, and regression tests. Local verification passed 5 tests plus a manual three-entity smoke test. See `GRAPHIFY_ADAPTATION.md` and `PHASE1_VERIFICATION.md`.
+
+STOP here until the user approves Phase 2.
 
 ## Phase 2 — Make the graph understand stories
 
