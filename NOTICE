@@ -1,6 +1,17 @@
-This project is a narrative-focused derivative inspired by and adapted from Graphify by Graphify Labs.
+Graphify
+Copyright 2026 Safi Shamsi and the Graphify contributors.
 
-Original project: https://github.com/Graphify-Labs/graphify
-Original project license: Apache License 2.0
+This product is licensed under the Apache License, Version 2.0 (see LICENSE).
 
-Modifications in this repository focus on novel/story analysis rather than source-code analysis.
+Portions of this software were contributed under the MIT License prior to the
+relicensing and remain available under those terms. The original MIT license
+text is retained in LICENSE-MIT.
+
+StoryGraph modifications
+Copyright 2026 StoryGraph contributors.
+
+StoryGraph is a narrative-focused derivative/adaptation of reusable Graphify
+architecture ideas. Modifications in this repository focus on novel/story
+analysis rather than source-code analysis.
+
+Upstream project: https://github.com/Graphify-Labs/graphify
