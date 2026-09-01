@@ -1,48 +1,44 @@
 ---
 name: storygraph
-description: Read novels and story notes, extract characters/events/locations/objects/secrets/clues/foreshadowing and their relationships, then maintain and query storygraph-out/graph.json. Use for novel understanding, continuity checking, relationship tracing, timeline reasoning, and preparing context before writing new chapters.
+description: Read novel chapters and story notes, extract grounded characters/events/locations/objects/secrets/clues/foreshadowing and relationships, then maintain and query StoryGraph. Use for long-form fiction memory, relationship tracing, chapter ingestion, timeline reasoning, continuity preparation, secret/knowledge tracking, and gathering established story context before analysis or writing.
 ---
 
-# StoryGraph novel workflow
+# StoryGraph workflow
 
-When working on a novel, treat the story graph as a second memory beside the original prose. Never replace the prose with the graph.
+Treat the original novel as the source of truth and the graph as structured story memory. Never replace exact prose, tone, or nuance with graph summaries.
 
-Before writing or answering a story question, query the graph when relevant, then read the exact source chapter for important details.
+For chapter extraction, read `references/extraction-spec.md`. For entity/relation choices, read `references/story-model.md` only when needed.
 
-When a chapter is added or changed, read it carefully and extract a JSON fragment containing only information supported by the text.
+## Read a chapter into StoryGraph
 
-Use these node types: character, location, organization, object, event, secret, clue, foreshadow, chapter, scene, rule, goal, belief, conflict, relationship, concept.
+Read the whole chapter before extracting facts.
 
-Prefer clear relations such as knows, does_not_know, loves, hates, trusts, distrusts, owns, gives_to, located_at, member_of, wants, fears, causes, witnesses, learns, reveals, hides_from, appears_in, foreshadows, pays_off, contradicts, occurs_before, occurs_after.
+Inspect the existing graph when relevant so recurring entities use stable identities. Preserve nicknames and alternate names as aliases rather than creating duplicate characters.
 
-Every important relation should include the chapter and source file. If the text states it directly, use confidence EXTRACTED. If it is a reasonable interpretation, use INFERRED. If uncertain, use AMBIGUOUS rather than pretending certainty.
+Extract only story facts supported by the chapter. Keep reader knowledge separate from character knowledge. Preserve old relationship states when a relationship changes.
 
-For secrets, track who knows them and when they learned them. For changing relationships, do not delete history; include chapter information so earlier and later states can both exist.
+Attach a short verbatim evidence passage to every relationship. Mark direct facts `EXTRACTED`, strong interpretations `INFERRED`, and unresolved interpretations `AMBIGUOUS`.
 
-Write the extracted fragment to a temporary JSON file, then run:
+Write the candidate fragment to JSON, then run:
 
-`storygraph add <fragment.json>`
+`storygraph validate-chapter <chapter-file> <fragment.json> --index <N> --label <chapter-label>`
 
-Useful commands:
+Fix any validation error. Do not bypass the evidence/source checks.
 
-`storygraph query "林夏"`
+After validation succeeds, run:
 
-`storygraph path "林夏" "银色钥匙"`
+`storygraph add-chapter <chapter-file> <fragment.json> --index <N> --label <chapter-label>`
 
-`storygraph check`
+Query the affected characters/objects afterward to make sure the resulting relationships look consistent with the chapter.
 
-Before continuing a chapter, first check the current characters, locations, important objects, secrets known by each present character, unresolved clues/foreshadowing, and recent relationship changes. If the proposed writing conflicts with established facts, tell the author before writing.
+## Answer story questions
 
-Fragment shape:
+Query the graph first for structural facts and relationship paths. Read the cited source chapter when exact wording, literary nuance, or an important disputed detail matters.
 
-```json
-{
-  "nodes": [
-    {"id": "character_林夏", "label": "林夏", "type": "character", "source_file": "chapters/012.md"},
-    {"id": "object_银色钥匙", "label": "银色钥匙", "type": "object", "source_file": "chapters/012.md"}
-  ],
-  "edges": [
-    {"source": "character_林夏", "target": "object_银色钥匙", "relation": "owns", "confidence": "EXTRACTED", "chapter": "第12章", "source_file": "chapters/012.md"}
-  ]
-}
-```
+Use:
+
+`storygraph query "<entity>"`
+
+`storygraph path "<entity A>" "<entity B>"`
+
+Never present an `INFERRED` or `AMBIGUOUS` relationship as if the novel stated it explicitly.
