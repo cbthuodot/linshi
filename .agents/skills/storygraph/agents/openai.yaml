@@ -1,0 +1,3 @@
+interface:
+  display_name: StoryGraph
+  short_description: Build and query grounded novel relationship graphs
