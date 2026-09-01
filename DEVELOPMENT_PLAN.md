@@ -78,7 +78,11 @@ When one chapter changes, replace only facts sourced from that chapter instead o
 
 Verification: edit chapter 2, update the graph, confirm chapters 1 and 3 remain correct, then inspect the generated outputs.
 
-STOP and report results.
+Status: DONE.
+
+Result: StoryGraph now tracks each grounded chapter with a cached fragment and SHA-256 fingerprint, supports `update-chapter`, and reconstructs a candidate graph from cached validated fragments without rereading unchanged chapter prose. Failed updates do not change the saved graph or manifest. `export` generates `graph.json`, a self-contained clickable `graph.html`, and `STORY_REPORT.md`. GitHub Actions passed the full Phase 1-5 suite with 31 tests. See `PHASE5_VERIFICATION.md`.
+
+STOP here until the user approves Phase 6.
 
 ## Phase 6 — Package for Codex / OpenCode / ZCode and final verification
 
