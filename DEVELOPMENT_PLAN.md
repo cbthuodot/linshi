@@ -66,7 +66,11 @@ Add checks for obvious contradictions, character knowledge leaks, impossible own
 
 Verification: deliberately plant errors in the test novel and require StoryGraph to detect them without falsely flagging the correct cases.
 
-STOP and report what it catches and what it cannot reliably catch.
+Status: DONE.
+
+Result: StoryGraph now supports timeline, chapter-specific knowledge and state queries, unresolved foreshadowing, graph community discovery, and strong consistency checks. It detects knowledge leaks, explicit contradiction edges, overlapping opposing relationships, multiple active owners, and multiple active locations. Later open-ended states automatically supersede earlier normal story states so distrust→trust, movement, and ownership transfer do not create false warnings. The full reconstructed suite passed 25 tests, the three-chapter Chinese regression story produced zero strong warnings, and the updated skill passed validation and packaging. See `PHASE4_VERIFICATION.md`.
+
+STOP here until the user approves Phase 5.
 
 ## Phase 5 — Add updates, visual graph, and reports
 
