@@ -1,0 +1,74 @@
+{
+  "nodes": [
+    {
+      "id": "event_secret_door_opens",
+      "label": "白塔石门开启",
+      "type": "event",
+      "source_file": "tests/fixtures/phase3_chapters/003.md",
+      "chapter": "第3章",
+      "chapter_index": 3
+    },
+    {
+      "id": "secret_entrance",
+      "label": "旧塔里的秘密入口",
+      "type": "secret",
+      "source_file": "tests/fixtures/phase3_chapters/003.md",
+      "chapter": "第3章",
+      "chapter_index": 3
+    }
+  ],
+  "edges": [
+    {
+      "source": "character_chen",
+      "target": "event_secret_door_opens",
+      "relation": "causes",
+      "confidence": "EXTRACTED",
+      "chapter": "第3章",
+      "chapter_index": 3,
+      "source_file": "tests/fixtures/phase3_chapters/003.md",
+      "evidence": "陈默把银色钥匙插进刻有白塔标记的石门，门开了"
+    },
+    {
+      "source": "foreshadow_map_mark",
+      "target": "secret_entrance",
+      "relation": "pays_off",
+      "confidence": "EXTRACTED",
+      "chapter": "第3章",
+      "chapter_index": 3,
+      "source_file": "tests/fixtures/phase3_chapters/003.md",
+      "evidence": "钥匙、地图和旧塔上的标记都指向这个秘密入口"
+    },
+    {
+      "source": "clue_tower_mark",
+      "target": "secret_entrance",
+      "relation": "pays_off",
+      "confidence": "EXTRACTED",
+      "chapter": "第3章",
+      "chapter_index": 3,
+      "source_file": "tests/fixtures/phase3_chapters/003.md",
+      "evidence": "钥匙、地图和旧塔上的标记都指向这个秘密入口"
+    },
+    {
+      "source": "character_lin",
+      "target": "secret_entrance",
+      "relation": "learns",
+      "confidence": "EXTRACTED",
+      "chapter": "第3章",
+      "chapter_index": 3,
+      "learned_at": 3,
+      "source_file": "tests/fixtures/phase3_chapters/003.md",
+      "evidence": "两人才明白钥匙、地图和旧塔上的标记都指向这个秘密入口"
+    },
+    {
+      "source": "character_chen",
+      "target": "secret_entrance",
+      "relation": "learns",
+      "confidence": "EXTRACTED",
+      "chapter": "第3章",
+      "chapter_index": 3,
+      "learned_at": 3,
+      "source_file": "tests/fixtures/phase3_chapters/003.md",
+      "evidence": "两人才明白钥匙、地图和旧塔上的标记都指向这个秘密入口"
+    }
+  ]
+}
