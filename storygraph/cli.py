@@ -5,6 +5,7 @@ import json
 from pathlib import Path
 
 from .core import add_fragment, basic_conflicts, load_graph, neighbors, save_graph, shortest_path
+from .export import to_html
 
 DEFAULT_GRAPH = Path("storygraph-out/graph.json")
 
@@ -65,6 +66,14 @@ def cmd_check(args: argparse.Namespace) -> int:
     return 1
 
 
+def cmd_export(args: argparse.Namespace) -> int:
+    graph = load_graph(_graph_path(args.graph))
+    output = Path(args.output or "storygraph-out/graph.html")
+    to_html(graph, output)
+    print(f"Relationship map written to {output}")
+    return 0
+
+
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(prog="storygraph")
     sub = parser.add_subparsers(dest="command", required=True)
@@ -92,6 +101,11 @@ def build_parser() -> argparse.ArgumentParser:
     p = sub.add_parser("check", help="run simple consistency checks")
     p.add_argument("--graph")
     p.set_defaults(func=cmd_check)
+
+    p = sub.add_parser("export", help="write an interactive HTML relationship map")
+    p.add_argument("--graph")
+    p.add_argument("--output")
+    p.set_defaults(func=cmd_export)
 
     return parser
 
