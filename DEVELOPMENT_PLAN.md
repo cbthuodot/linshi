@@ -52,7 +52,11 @@ Track especially: who knows which secret and when, relationship changes, clues, 
 
 Verification: feed the fixed three-chapter Chinese test story and compare the produced graph against an expected answer prepared in the tests.
 
-STOP and report extraction accuracy and mistakes found.
+Status: DONE.
+
+Result: StoryGraph now ships a grounded chapter-reading workflow for coding agents, separate extraction/model references, and `validate-chapter` / `add-chapter` commands. Every written relationship must carry source chapter information and an evidence passage present in the original chapter. The fixed three-chapter Chinese fixture covers aliases, secret knowledge changes, clues/foreshadowing, and payoff. Local smoke verification confirmed alias remapping, `does_not_know`→`learns`/`knows` history, payoff tracking, and rejection of fake evidence, wrong chapter numbers, wrong source files, and missing evidence. The skill bundle itself also passed validation and packaged successfully. See `PHASE3_VERIFICATION.md`.
+
+STOP here until the user approves Phase 4.
 
 ## Phase 4 — Add novel reasoning and consistency checks
 
