@@ -1,137 +1,138 @@
 from __future__ import annotations
 
 import json
-import re
 from pathlib import Path
-from typing import Iterable
 
 import networkx as nx
 
-ALLOWED_TYPES = {
-    "character", "location", "organization", "object", "event", "secret",
-    "clue", "foreshadow", "chapter", "scene", "rule", "goal", "belief",
-    "conflict", "relationship", "concept",
-}
+from .validate import assert_valid
 
-
-def make_id(kind: str, label: str) -> str:
-    text = re.sub(r"[^\w\u4e00-\u9fff]+", "_", label.strip().lower()).strip("_")
-    return f"{kind}_{text}" if text else kind
+SCHEMA_VERSION = 1
 
 
 def empty_graph() -> nx.MultiDiGraph:
-    return nx.MultiDiGraph()
+    graph = nx.MultiDiGraph()
+    graph.graph.update({"schema_version": SCHEMA_VERSION, "kind": "storygraph"})
+    return graph
 
 
 def add_fragment(graph: nx.MultiDiGraph, fragment: dict) -> None:
-    for node in fragment.get("nodes", []):
-        kind = node.get("type", "concept")
-        if kind not in ALLOWED_TYPES:
-            kind = "concept"
-        node_id = node.get("id") or make_id(kind, node.get("label", "unknown"))
-        attrs = dict(node)
-        attrs["type"] = kind
-        attrs["label"] = node.get("label", node_id)
-        graph.add_node(node_id, **attrs)
+    """Validate and merge a graph fragment. Invalid data fails loudly."""
+    assert_valid(fragment)
+    for node in fragment["nodes"]:
+        node_id = node["id"]
+        attrs = {k: v for k, v in node.items() if k != "id"}
+        if node_id in graph:
+            existing = dict(graph.nodes[node_id])
+            existing.update({k: v for k, v in attrs.items() if v is not None})
+            graph.nodes[node_id].update(existing)
+        else:
+            graph.add_node(node_id, **attrs)
 
-    for edge in fragment.get("edges", []):
-        source = edge.get("source")
-        target = edge.get("target")
-        if not source or not target or source not in graph or target not in graph:
-            continue
-        attrs = dict(edge)
-        attrs.setdefault("relation", "related_to")
-        attrs.setdefault("confidence", "INFERRED")
-        graph.add_edge(source, target, **attrs)
+    for edge in fragment["edges"]:
+        source = edge["source"]
+        target = edge["target"]
+        attrs = {k: v for k, v in edge.items() if k not in {"source", "target", "key"}}
+        key = edge.get("key")
+        if key is None:
+            graph.add_edge(source, target, **attrs)
+        else:
+            graph.add_edge(source, target, key=str(key), **attrs)
+
+
+def graph_to_data(graph: nx.MultiDiGraph) -> dict:
+    nodes = []
+    for node_id, attrs in sorted(graph.nodes(data=True), key=lambda item: str(item[0])):
+        nodes.append({"id": node_id, **dict(attrs)})
+
+    edges = []
+    for source, target, key, attrs in graph.edges(keys=True, data=True):
+        edges.append({"source": source, "target": target, "key": str(key), **dict(attrs)})
+    edges.sort(key=lambda item: (str(item["source"]), str(item["target"]), str(item["key"])))
+
+    return {
+        "schema_version": SCHEMA_VERSION,
+        "graph": {"kind": graph.graph.get("kind", "storygraph")},
+        "nodes": nodes,
+        "edges": edges,
+    }
+
+
+def graph_from_data(data: dict) -> nx.MultiDiGraph:
+    # Backward-compatible with the early prototype, which had no schema_version.
+    version = data.get("schema_version", SCHEMA_VERSION)
+    if version != SCHEMA_VERSION:
+        raise ValueError(f"Unsupported StoryGraph schema version: {version}")
+    fragment = {"nodes": data.get("nodes", []), "edges": data.get("edges", [])}
+    graph = empty_graph()
+    graph_meta = data.get("graph")
+    if isinstance(graph_meta, dict):
+        graph.graph.update(graph_meta)
+    add_fragment(graph, fragment)
+    return graph
 
 
 def load_graph(path: Path) -> nx.MultiDiGraph:
     if not path.exists():
         return empty_graph()
     data = json.loads(path.read_text(encoding="utf-8"))
-    graph = empty_graph()
-    add_fragment(graph, data)
-    return graph
+    if not isinstance(data, dict):
+        raise ValueError("StoryGraph file must contain a JSON object")
+    return graph_from_data(data)
 
 
 def save_graph(graph: nx.MultiDiGraph, path: Path) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
-    nodes = []
-    for node_id, attrs in graph.nodes(data=True):
-        item = dict(attrs)
-        item["id"] = node_id
-        nodes.append(item)
-    edges = []
-    for source, target, attrs in graph.edges(data=True):
-        item = dict(attrs)
-        item["source"] = source
-        item["target"] = target
-        edges.append(item)
-    path.write_text(json.dumps({"nodes": nodes, "edges": edges}, ensure_ascii=False, indent=2), encoding="utf-8")
+    path.write_text(
+        json.dumps(graph_to_data(graph), ensure_ascii=False, indent=2) + "\n",
+        encoding="utf-8",
+    )
+
+
+def _find_nodes(graph: nx.MultiDiGraph, query: str) -> list[str]:
+    q = query.casefold().strip()
+    if not q:
+        return []
+    return [
+        node_id
+        for node_id, attrs in graph.nodes(data=True)
+        if q in str(attrs.get("label", node_id)).casefold()
+    ]
 
 
 def neighbors(graph: nx.MultiDiGraph, query: str) -> list[dict]:
-    q = query.casefold()
-    matched = [n for n, a in graph.nodes(data=True) if q in str(a.get("label", n)).casefold()]
     results: list[dict] = []
-    for node in matched:
-        for _, target, attrs in graph.out_edges(node, data=True):
-            results.append({
-                "from": graph.nodes[node].get("label", node),
-                "relation": attrs.get("relation", "related_to"),
-                "to": graph.nodes[target].get("label", target),
-                "chapter": attrs.get("chapter"),
-                "source": attrs.get("source_file"),
-            })
-        for source, _, attrs in graph.in_edges(node, data=True):
-            results.append({
-                "from": graph.nodes[source].get("label", source),
-                "relation": attrs.get("relation", "related_to"),
-                "to": graph.nodes[node].get("label", node),
-                "chapter": attrs.get("chapter"),
-                "source": attrs.get("source_file"),
-            })
+    for node in _find_nodes(graph, query):
+        for _, target, key, attrs in graph.out_edges(node, keys=True, data=True):
+            results.append(
+                {
+                    "from": graph.nodes[node].get("label", node),
+                    "relation": attrs.get("relation", "related_to"),
+                    "to": graph.nodes[target].get("label", target),
+                    "confidence": attrs.get("confidence"),
+                    "key": str(key),
+                }
+            )
+        for source, _, key, attrs in graph.in_edges(node, keys=True, data=True):
+            results.append(
+                {
+                    "from": graph.nodes[source].get("label", source),
+                    "relation": attrs.get("relation", "related_to"),
+                    "to": graph.nodes[node].get("label", node),
+                    "confidence": attrs.get("confidence"),
+                    "key": str(key),
+                }
+            )
     return results
 
 
 def shortest_path(graph: nx.MultiDiGraph, a: str, b: str) -> list[str]:
-    def find(label: str) -> str | None:
-        q = label.casefold()
-        for node, attrs in graph.nodes(data=True):
-            if q in str(attrs.get("label", node)).casefold():
-                return node
-        return None
-
-    source, target = find(a), find(b)
-    if not source or not target:
+    source_matches = _find_nodes(graph, a)
+    target_matches = _find_nodes(graph, b)
+    if not source_matches or not target_matches:
         return []
     try:
-        path = nx.shortest_path(graph.to_undirected(), source, target)
+        path = nx.shortest_path(graph.to_undirected(), source_matches[0], target_matches[0])
     except nx.NetworkXNoPath:
         return []
-    return [str(graph.nodes[n].get("label", n)) for n in path]
-
-
-def basic_conflicts(graph: nx.MultiDiGraph) -> list[str]:
-    conflicts: list[str] = []
-    ownership: dict[str, set[str]] = {}
-    locations: dict[str, set[str]] = {}
-    for source, target, attrs in graph.edges(data=True):
-        relation = str(attrs.get("relation", "")).lower()
-        if relation in {"owns", "owned_by", "possesses"}:
-            ownership.setdefault(target, set()).add(source)
-        if relation in {"located_at", "is_at"}:
-            locations.setdefault(source, set()).add(target)
-    for obj, owners in ownership.items():
-        if len(owners) > 1:
-            conflicts.append(f"{graph.nodes[obj].get('label', obj)} 同时有多个当前拥有者")
-    for person, places in locations.items():
-        if len(places) > 1:
-            conflicts.append(f"{graph.nodes[person].get('label', person)} 同时出现在多个当前地点")
-    return conflicts
-
-
-def chapter_files(root: Path) -> Iterable[Path]:
-    for path in sorted(root.rglob("*")):
-        if path.suffix.lower() in {".md", ".txt"} and path.is_file():
-            yield path
+    return [str(graph.nodes[node].get("label", node)) for node in path]
