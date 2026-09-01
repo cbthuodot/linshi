@@ -29,10 +29,7 @@ def test_knowledge_state_changes_by_chapter():
     add_fragment(
         graph,
         {
-            "nodes": [
-                node("chen", "陈默", "character"),
-                node("secret", "白塔印记", "secret"),
-            ],
+            "nodes": [node("chen", "陈默", "character"), node("secret", "白塔印记", "secret")],
             "edges": [
                 edge("chen", "secret", "does_not_know", 1),
                 edge("chen", "secret", "learns", 2, learned_at=2),
@@ -76,9 +73,7 @@ def test_unresolved_foreshadowing_changes_after_payoff():
                 node("foreshadow", "地图上的白塔符号", "foreshadow", 1),
                 node("entrance", "旧塔密门", "secret", 3),
             ],
-            "edges": [
-                edge("foreshadow", "entrance", "pays_off", 3),
-            ],
+            "edges": [edge("foreshadow", "entrance", "pays_off", 3)],
         },
     )
     assert [item["id"] for item in unresolved_foreshadowing(graph, 2)] == ["foreshadow"]
@@ -102,7 +97,7 @@ def test_checker_catches_planted_errors():
                 edge("lin", "secret", "reveals", 1),
                 edge("lin", "secret", "learns", 2, learned_at=2),
                 edge("lin", "secret", "knows", 2, valid_from=2),
-                edge("lin", "key", "owns", 1, valid_from=1),
+                edge("lin", "key", "owns", 1, valid_from=1, valid_to=2),
                 edge("chen", "key", "owns", 2, valid_from=2),
                 edge("lin", "north", "located_at", 2, valid_from=2),
                 edge("lin", "tower", "located_at", 2, valid_from=2),
@@ -118,7 +113,36 @@ def test_checker_catches_planted_errors():
     assert "relationship_conflict" in kinds
 
 
-def test_checker_does_not_flag_correct_transitions():
+def test_open_ended_story_transitions_are_not_false_conflicts():
+    graph = empty_graph()
+    add_fragment(
+        graph,
+        {
+            "nodes": [
+                node("lin", "林夏", "character"),
+                node("chen", "陈默", "character"),
+                node("key", "银色钥匙", "object"),
+                node("north", "北港", "location"),
+                node("tower", "旧塔", "location"),
+            ],
+            "edges": [
+                edge("lin", "key", "owns", 1, valid_from=1),
+                edge("chen", "key", "owns", 2, valid_from=2),
+                edge("lin", "north", "located_at", 1, valid_from=1),
+                edge("lin", "tower", "located_at", 2, valid_from=2),
+                edge("lin", "chen", "distrusts", 1, valid_from=1),
+                edge("lin", "chen", "trusts", 2, valid_from=2),
+            ],
+        },
+    )
+    assert consistency_issues(graph) == []
+    state = active_relationships(graph, "银色钥匙", 2)
+    assert [(row["from"], row["relation"], row["to"]) for row in state] == [
+        ("陈默", "owns", "银色钥匙")
+    ]
+
+
+def test_checker_does_not_flag_correct_explicit_transitions():
     graph = empty_graph()
     add_fragment(
         graph,
