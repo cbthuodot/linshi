@@ -1,0 +1,93 @@
+{
+  "nodes": [
+    {
+      "id": "character_lin",
+      "label": "林夏",
+      "type": "character",
+      "aliases": ["小夏"],
+      "source_file": "tests/fixtures/phase3_chapters/001.md",
+      "chapter": "第1章",
+      "chapter_index": 1
+    },
+    {
+      "id": "character_chen",
+      "label": "陈默",
+      "type": "character",
+      "source_file": "tests/fixtures/phase3_chapters/001.md",
+      "chapter": "第1章",
+      "chapter_index": 1
+    },
+    {
+      "id": "object_key",
+      "label": "银色钥匙",
+      "type": "object",
+      "source_file": "tests/fixtures/phase3_chapters/001.md",
+      "chapter": "第1章",
+      "chapter_index": 1
+    },
+    {
+      "id": "secret_white_tower_mark",
+      "label": "银色钥匙背面的白塔标记",
+      "type": "secret",
+      "source_file": "tests/fixtures/phase3_chapters/001.md",
+      "chapter": "第1章",
+      "chapter_index": 1
+    },
+    {
+      "id": "foreshadow_map_mark",
+      "label": "旧地图上的白塔标记",
+      "type": "foreshadow",
+      "source_file": "tests/fixtures/phase3_chapters/001.md",
+      "chapter": "第1章",
+      "chapter_index": 1,
+      "evidence": "她注意到旧地图角落也画着同样的白塔标记"
+    }
+  ],
+  "edges": [
+    {
+      "source": "character_lin",
+      "target": "character_chen",
+      "relation": "distrusts",
+      "confidence": "EXTRACTED",
+      "chapter": "第1章",
+      "chapter_index": 1,
+      "valid_from": 1,
+      "source_file": "tests/fixtures/phase3_chapters/001.md",
+      "evidence": "她仍然不信任陈默"
+    },
+    {
+      "source": "character_lin",
+      "target": "secret_white_tower_mark",
+      "relation": "learns",
+      "confidence": "EXTRACTED",
+      "chapter": "第1章",
+      "chapter_index": 1,
+      "learned_at": 1,
+      "source_file": "tests/fixtures/phase3_chapters/001.md",
+      "evidence": "发现钥匙背面刻着一个白塔标记"
+    },
+    {
+      "source": "character_lin",
+      "target": "secret_white_tower_mark",
+      "relation": "knows",
+      "confidence": "EXTRACTED",
+      "chapter": "第1章",
+      "chapter_index": 1,
+      "valid_from": 1,
+      "source_file": "tests/fixtures/phase3_chapters/001.md",
+      "evidence": "发现钥匙背面刻着一个白塔标记"
+    },
+    {
+      "source": "character_chen",
+      "target": "secret_white_tower_mark",
+      "relation": "does_not_know",
+      "confidence": "EXTRACTED",
+      "chapter": "第1章",
+      "chapter_index": 1,
+      "valid_from": 1,
+      "valid_to": 1,
+      "source_file": "tests/fixtures/phase3_chapters/001.md",
+      "evidence": "陈默对此一无所知"
+    }
+  ]
+}
