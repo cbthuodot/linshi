@@ -2,7 +2,7 @@
 
 StoryGraph is a novel/story relationship-graph tool adapted from reusable architecture ideas in Graphify.
 
-The project is being rebuilt in phases. Phase 2 is now complete on the development branch: the graph can represent story-specific entities and relationships, preserve relationship history by chapter, merge explicit character aliases conservatively, and keep source/evidence information with facts.
+The project is being rebuilt in phases. Phase 3 is now complete on the development branch: coding agents can read chapters under a strict extraction workflow, attach source evidence to relationships, and validate the extraction against the original chapter before anything is written into the graph.
 
 ## Install for development
 
@@ -22,14 +22,18 @@ pip install -e . --no-build-isolation
 ```bash
 storygraph init
 storygraph add fragment.json
+storygraph validate-chapter chapters/001.md fragment.json --index 1 --label "第1章"
+storygraph add-chapter chapters/001.md fragment.json --index 1 --label "第1章"
 storygraph query "林夏"
 storygraph path "林夏" "银色钥匙"
 ```
 
 The graph is stored at `storygraph-out/graph.json` by default.
 
-Phase 2 supports characters, locations, organizations, objects, events, secrets, clues, foreshadowing, chapters/scenes, rules, goals, beliefs, conflicts, and related story concepts. Relationships can carry chapter order, validity range, source file, evidence text, and confidence. Exact aliases such as `林夏` / `小夏` can resolve to one canonical character without fuzzy name guessing.
+Phase 3 keeps the original novel as the source of truth. Every chapter-derived relationship must carry its source chapter and a short evidence passage found in that chapter. The agent workflow separates explicit facts, reasonable interpretation, and uncertainty, and explicitly prevents reader knowledge from automatically becoming character knowledge.
 
-Automatic AI reading of chapter prose is intentionally not part of Phase 2. That is Phase 3: Codex/OpenCode/ZCode will read chapters and produce these story facts under strict extraction rules.
+The included StoryGraph skill lives at `.agents/skills/storygraph/`. Its detailed extraction rules are split into reference files so agents only load them when needed.
 
-See `DEVELOPMENT_PLAN.md` for the phase plan, `PHASE2_VERIFICATION.md` for the Phase 2 test results, `GRAPHIFY_ADAPTATION.md` for which Graphify ideas are reused, and `NOTICE` for upstream attribution.
+The current version already supports story entities, conservative aliases, changing relationships, secret/knowledge states, clues/foreshadowing, source evidence, and grounded chapter ingestion. Broader contradiction detection and story reasoning are Phase 4.
+
+See `DEVELOPMENT_PLAN.md` for the phase plan, `PHASE3_VERIFICATION.md` for the current verification results, `GRAPHIFY_ADAPTATION.md` for which Graphify ideas are reused, and `NOTICE` for upstream attribution.
