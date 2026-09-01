@@ -1,13 +1,13 @@
 ---
 name: storygraph
-description: Read novel chapters and story notes, extract grounded characters/events/locations/objects/secrets/clues/foreshadowing and relationships, then maintain and query StoryGraph. Use for long-form fiction memory, relationship tracing, chapter ingestion, timeline reasoning, continuity preparation, secret/knowledge tracking, and gathering established story context before analysis or writing.
+description: Read novel chapters and story notes, extract grounded characters/events/locations/objects/secrets/clues/foreshadowing and relationships, then maintain and reason over StoryGraph. Use for long-form fiction memory, relationship tracing, chapter ingestion, timeline reasoning, continuity checking, secret/knowledge tracking, unresolved foreshadowing, and gathering established story context before analysis or writing.
 ---
 
 # StoryGraph workflow
 
 Treat the original novel as the source of truth and the graph as structured story memory. Never replace exact prose, tone, or nuance with graph summaries.
 
-For chapter extraction, read `references/extraction-spec.md`. For entity/relation choices, read `references/story-model.md` only when needed.
+For chapter extraction, read `references/extraction-spec.md`. For entity/relation choices, read `references/story-model.md` only when needed. For knowledge/timeline/continuity checks, read `references/reasoning.md`.
 
 ## Read a chapter into StoryGraph
 
@@ -40,5 +40,21 @@ Use:
 `storygraph query "<entity>"`
 
 `storygraph path "<entity A>" "<entity B>"`
+
+`storygraph timeline "<entity>"`
+
+`storygraph knowledge "<character>" "<secret>" --at <chapter>`
+
+`storygraph state "<entity>" --at <chapter>`
+
+For unfinished threads or a pre-writing continuity pass, use:
+
+`storygraph unresolved --at <chapter>`
+
+`storygraph check`
+
+`storygraph groups`
+
+Treat `unknown` knowledge as insufficient evidence, not proof of ignorance. Treat consistency warnings as issues to inspect against the original prose, not automatic proof the author made a mistake.
 
 Never present an `INFERRED` or `AMBIGUOUS` relationship as if the novel stated it explicitly.
