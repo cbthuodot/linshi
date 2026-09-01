@@ -38,7 +38,11 @@ Add time/history fields so old relationships are preserved instead of overwritte
 
 Verification: use three hand-written chapters and confirm changing relationships, object ownership, aliases, and story order are represented correctly.
 
-STOP and report results.
+Status: DONE.
+
+Result: StoryGraph now has a narrative entity/relation model, conservative alias merging, chapter/time validity fields, source/evidence tracking, alias-aware lookup, ordered relationship history, and schema version 2. Verification used three fixed Chinese chapters and passed 12 automated tests. It correctly merged 林夏/小夏, preserved distrust→trust history, preserved the silver key's ownership change, and retained evidence through save/load. See `PHASE2_VERIFICATION.md`.
+
+STOP here until the user approves Phase 3.
 
 ## Phase 3 — Make AI read chapters into the graph
 
