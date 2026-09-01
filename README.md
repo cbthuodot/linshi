@@ -1,36 +1,33 @@
 # StoryGraph
 
-StoryGraph is an experimental novel/story knowledge-graph tool adapted from the architecture and ideas of Graphify.
+StoryGraph is a novel/story relationship-graph tool adapted from reusable architecture ideas in Graphify.
 
-It turns story material into a relationship map that AI agents can query. Instead of functions and classes, it focuses on characters, events, locations, objects, organizations, secrets, clues, foreshadowing, goals, beliefs, and chapters.
+The project is being rebuilt in phases. The current development branch contains the Phase 1 foundation: validated node/relationship input, a stable JSON graph format, multiple relationships between the same entities, basic relationship queries, and path finding.
 
-## Install
+## Install for development
 
 ```bash
 pip install -e .
 storygraph init
 ```
 
-The repository includes an agent skill at `.agents/skills/storygraph/SKILL.md`. Codex/OpenCode-compatible agents can use that workflow to read chapters and turn story facts into graph fragments.
-
-## Basic use
-
-After an agent has extracted a chapter fragment:
+If the machine is offline but already has the build dependencies installed, use:
 
 ```bash
-storygraph add chapter-fragment.json
-storygraph query "林夏"
-storygraph path "林夏" "银色钥匙"
-storygraph check
-storygraph export
+pip install -e . --no-build-isolation
 ```
 
-`storygraph export` creates `storygraph-out/graph.html`, an interactive relationship map.
+## Current Phase 1 commands
 
-The first version deliberately keeps the original prose and the graph separate: the graph stores story logic and relationships, while the original chapters remain the source for exact wording, style, and nuance.
+```bash
+storygraph init
+storygraph add fragment.json
+storygraph query "林夏"
+storygraph path "林夏" "银色钥匙"
+```
 
-## Status
+The graph is stored at `storygraph-out/graph.json` by default.
 
-This is an early novel-oriented adaptation, not yet a finished replacement for Graphify. The current version has the graph core, relationship queries, path finding, basic consistency checks, interactive graph export, and the novel extraction workflow. The next work is stronger time-aware relationship handling, character knowledge boundaries, foreshadowing tracking, and automatic chapter update handling.
+Novel-specific time/history, aliases, secrets, foreshadowing, consistency checks, interactive visualization, automatic chapter updating, and final Codex/OpenCode/ZCode packaging are added in later phases defined in `DEVELOPMENT_PLAN.md`.
 
-See `NOTICE` for upstream attribution.
+See `GRAPHIFY_ADAPTATION.md` for exactly which Graphify ideas are reused and which code-specific parts are deliberately not copied. See `NOTICE` for upstream attribution.
