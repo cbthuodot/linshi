@@ -4,9 +4,16 @@ import argparse
 import json
 from pathlib import Path
 
-from .core import add_fragment, empty_graph, load_graph, neighbors, save_graph, shortest_path
+from .core import add_fragment, empty_graph, load_graph, neighbors, save_graph, shortest_path, story_history
 from .extraction import add_chapter_fragment, chapter_extraction_errors
 from .paths import DEFAULT_GRAPH
+from .reasoning import (
+    active_relationships,
+    consistency_issues,
+    knowledge_state,
+    story_groups,
+    unresolved_foreshadowing,
+)
 
 
 def _graph_path(value: str | None) -> Path:
@@ -91,6 +98,75 @@ def cmd_path(args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_timeline(args: argparse.Namespace) -> int:
+    graph = load_graph(_graph_path(args.graph))
+    rows = story_history(graph, args.text)
+    if not rows:
+        print("No timeline entries found.")
+        return 0
+    for row in rows:
+        chapter = row.get("chapter") or f"第{row.get('chapter_index', '?')}章"
+        print(f"{chapter}: {row['from']} --{row['relation']}--> {row['to']}")
+    return 0
+
+
+def cmd_knowledge(args: argparse.Namespace) -> int:
+    graph = load_graph(_graph_path(args.graph))
+    state = knowledge_state(graph, args.character, args.secret, args.at)
+    print(f"第{args.at}章：{args.character} 对『{args.secret}』的状态 = {state['state']}")
+    for item in state["evidence"]:
+        evidence = f" — {item['evidence']}" if item.get("evidence") else ""
+        print(f"  第{item['chapter_index']}章 {item['relation']}{evidence}")
+    return 0
+
+
+def cmd_state(args: argparse.Namespace) -> int:
+    graph = load_graph(_graph_path(args.graph))
+    rows = active_relationships(graph, args.text, args.at)
+    if not rows:
+        print("No active relationships found.")
+        return 0
+    for row in rows:
+        print(f"{row['from']} --{row['relation']}--> {row['to']}")
+    return 0
+
+
+def cmd_unresolved(args: argparse.Namespace) -> int:
+    graph = load_graph(_graph_path(args.graph))
+    rows = unresolved_foreshadowing(graph, args.at)
+    if not rows:
+        print("No unresolved clues or foreshadowing found.")
+        return 0
+    for row in rows:
+        chapter = f"第{row['chapter_index']}章" if isinstance(row.get("chapter_index"), int) else "未知章节"
+        print(f"{chapter}: {row['label']} ({row['type']})")
+    return 0
+
+
+def cmd_groups(args: argparse.Namespace) -> int:
+    graph = load_graph(_graph_path(args.graph))
+    groups = story_groups(graph)
+    if not groups:
+        print("No story groups found.")
+        return 0
+    for index, group in enumerate(groups, start=1):
+        members = "、".join(str(item) for item in group["members"])
+        print(f"Group {index} ({group['size']}): {members} | central={group['central']}")
+    return 0
+
+
+def cmd_check(args: argparse.Namespace) -> int:
+    graph = load_graph(_graph_path(args.graph))
+    issues = consistency_issues(graph)
+    if not issues:
+        print("No strong consistency issues found.")
+        return 0
+    for issue in issues:
+        chapter = f"第{issue['chapter_index']}章" if isinstance(issue.get("chapter_index"), int) else "未知章节"
+        print(f"- [{issue['kind']}] {chapter}: {issue['message']}")
+    return 1
+
+
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(prog="storygraph")
     sub = parser.add_subparsers(dest="command", required=True)
@@ -134,6 +210,37 @@ def build_parser() -> argparse.ArgumentParser:
     path.add_argument("b")
     path.add_argument("--graph")
     path.set_defaults(func=cmd_path)
+
+    timeline = sub.add_parser("timeline", help="show an entity's relationship history in chapter order")
+    timeline.add_argument("text")
+    timeline.add_argument("--graph")
+    timeline.set_defaults(func=cmd_timeline)
+
+    knowledge = sub.add_parser("knowledge", help="ask whether a character knows a secret at a chapter")
+    knowledge.add_argument("character")
+    knowledge.add_argument("secret")
+    knowledge.add_argument("--at", type=int, required=True)
+    knowledge.add_argument("--graph")
+    knowledge.set_defaults(func=cmd_knowledge)
+
+    state = sub.add_parser("state", help="show active relationships for an entity at a chapter")
+    state.add_argument("text")
+    state.add_argument("--at", type=int, required=True)
+    state.add_argument("--graph")
+    state.set_defaults(func=cmd_state)
+
+    unresolved = sub.add_parser("unresolved", help="show clues/foreshadowing without a payoff")
+    unresolved.add_argument("--at", type=int)
+    unresolved.add_argument("--graph")
+    unresolved.set_defaults(func=cmd_unresolved)
+
+    groups = sub.add_parser("groups", help="show connected story groups")
+    groups.add_argument("--graph")
+    groups.set_defaults(func=cmd_groups)
+
+    check = sub.add_parser("check", help="detect strong continuity and knowledge conflicts")
+    check.add_argument("--graph")
+    check.set_defaults(func=cmd_check)
     return parser
 
 
