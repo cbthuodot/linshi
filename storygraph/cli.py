@@ -5,7 +5,8 @@ import json
 from pathlib import Path
 
 from .core import add_fragment, empty_graph, load_graph, neighbors, save_graph, shortest_path, story_history
-from .extraction import add_chapter_fragment, chapter_extraction_errors
+from .export import export_all, to_report
+from .extraction import chapter_extraction_errors
 from .paths import DEFAULT_GRAPH
 from .reasoning import (
     active_relationships,
@@ -14,6 +15,7 @@ from .reasoning import (
     story_groups,
     unresolved_foreshadowing,
 )
+from .workspace import ingest_chapter, update_chapter
 
 
 def _graph_path(value: str | None) -> Path:
@@ -64,17 +66,29 @@ def cmd_validate_chapter(args: argparse.Namespace) -> int:
 
 def cmd_add_chapter(args: argparse.Namespace) -> int:
     path = _graph_path(args.graph)
-    graph = load_graph(path)
     fragment = _read_fragment(args.fragment)
-    add_chapter_fragment(
-        graph,
-        fragment,
+    ingest_chapter(
+        graph_path=path,
         chapter_path=Path(args.chapter),
+        fragment=fragment,
         chapter_index=args.index,
         chapter_label=args.label,
     )
-    save_graph(graph, path)
-    print(f"Added grounded chapter {args.index}: {len(fragment['edges'])} relations")
+    print(f"Added tracked chapter {args.index}: {len(fragment['edges'])} relations")
+    return 0
+
+
+def cmd_update_chapter(args: argparse.Namespace) -> int:
+    path = _graph_path(args.graph)
+    fragment = _read_fragment(args.fragment)
+    update_chapter(
+        graph_path=path,
+        chapter_path=Path(args.chapter),
+        fragment=fragment,
+        chapter_index=args.index,
+        chapter_label=args.label,
+    )
+    print(f"Updated tracked chapter {args.index}: {len(fragment['edges'])} relations")
     return 0
 
 
@@ -167,6 +181,24 @@ def cmd_check(args: argparse.Namespace) -> int:
     return 1
 
 
+def cmd_report(args: argparse.Namespace) -> int:
+    graph_path = _graph_path(args.graph)
+    report_path = Path(args.output) if args.output else graph_path.parent / "STORY_REPORT.md"
+    to_report(load_graph(graph_path), report_path, graph_path=graph_path)
+    print(f"Story report written: {report_path}")
+    return 0
+
+
+def cmd_export(args: argparse.Namespace) -> int:
+    graph_path = _graph_path(args.graph)
+    html_path = Path(args.html) if args.html else graph_path.parent / "graph.html"
+    report_path = Path(args.report) if args.report else graph_path.parent / "STORY_REPORT.md"
+    graph = load_graph(graph_path)
+    export_all(graph, graph_path, html_path, report_path)
+    print(f"Exported: {graph_path}, {html_path}, {report_path}")
+    return 0
+
+
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(prog="storygraph")
     sub = parser.add_subparsers(dest="command", required=True)
@@ -175,7 +207,7 @@ def build_parser() -> argparse.ArgumentParser:
     init.add_argument("--graph")
     init.set_defaults(func=cmd_init)
 
-    add = sub.add_parser("add", help="validate and add a graph fragment")
+    add = sub.add_parser("add", help="validate and add an untracked graph fragment")
     add.add_argument("fragment")
     add.add_argument("--graph")
     add.set_defaults(func=cmd_add)
@@ -191,7 +223,7 @@ def build_parser() -> argparse.ArgumentParser:
     validate_chapter.set_defaults(func=cmd_validate_chapter)
 
     add_chapter = sub.add_parser(
-        "add-chapter", help="validate a chapter extraction against its text, then add it"
+        "add-chapter", help="validate, add, and track a chapter for safe future updates"
     )
     add_chapter.add_argument("chapter")
     add_chapter.add_argument("fragment")
@@ -199,6 +231,16 @@ def build_parser() -> argparse.ArgumentParser:
     add_chapter.add_argument("--label")
     add_chapter.add_argument("--graph")
     add_chapter.set_defaults(func=cmd_add_chapter)
+
+    update = sub.add_parser(
+        "update-chapter", help="replace one tracked chapter without rereading unchanged chapters"
+    )
+    update.add_argument("chapter")
+    update.add_argument("fragment")
+    update.add_argument("--index", type=int, required=True)
+    update.add_argument("--label")
+    update.add_argument("--graph")
+    update.set_defaults(func=cmd_update_chapter)
 
     query = sub.add_parser("query", help="show relationships around an entity")
     query.add_argument("text")
@@ -223,7 +265,7 @@ def build_parser() -> argparse.ArgumentParser:
     knowledge.add_argument("--graph")
     knowledge.set_defaults(func=cmd_knowledge)
 
-    state = sub.add_parser("state", help="show active relationships for an entity at a chapter")
+    state = sub.add_parser("state", help="show effective relationships for an entity at a chapter")
     state.add_argument("text")
     state.add_argument("--at", type=int, required=True)
     state.add_argument("--graph")
@@ -241,6 +283,17 @@ def build_parser() -> argparse.ArgumentParser:
     check = sub.add_parser("check", help="detect strong continuity and knowledge conflicts")
     check.add_argument("--graph")
     check.set_defaults(func=cmd_check)
+
+    report = sub.add_parser("report", help="write STORY_REPORT.md")
+    report.add_argument("--output")
+    report.add_argument("--graph")
+    report.set_defaults(func=cmd_report)
+
+    export = sub.add_parser("export", help="write graph.json, clickable graph.html, and STORY_REPORT.md")
+    export.add_argument("--html")
+    export.add_argument("--report")
+    export.add_argument("--graph")
+    export.set_defaults(func=cmd_export)
     return parser
 
 
