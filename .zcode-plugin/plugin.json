@@ -1,0 +1,5 @@
+{
+  "name": "novel-style-extractor",
+  "version": "0.1.0",
+  "description": "Chinese long-form fiction style extraction for ZCode. Builds a portable style_bundle for separate continuation skills."
+}
