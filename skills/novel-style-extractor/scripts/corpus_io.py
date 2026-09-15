@@ -14,7 +14,7 @@ import xml.etree.ElementTree as ET
 SUPPORTED = {".txt", ".md", ".markdown", ".docx"}
 CHAPTER_RE = re.compile(
     r"^\s*(?:第\s*[零〇一二三四五六七八九十百千万两0-9]+\s*[章节回卷篇部]|"
-    r"chapter\s+\d+|卷\s*[零〇一二三四五六七八九十百千万两0-9]+)\b.*$",
+    r"chapter\s+\d+|卷\s*[零〇一二三四五六七八九十百千万两0-9]+).*?$",
     re.IGNORECASE,
 )
 
