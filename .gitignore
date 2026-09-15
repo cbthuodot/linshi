@@ -1,0 +1,6 @@
+__pycache__/
+*.py[cod]
+.style-work/
+style_bundle/
+dist/
+.DS_Store
