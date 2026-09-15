@@ -1,0 +1,3 @@
+interface:
+  display_name: "Novel Style Extractor"
+  short_description: "Extract reusable style bundles from Chinese fiction"
